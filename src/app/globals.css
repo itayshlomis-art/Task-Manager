@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-rubik);
+}
+
+body {
+  font-family: var(--font-rubik), system-ui, Arial, sans-serif;
+}
+
+* {
+  scrollbar-width: thin;
+}
