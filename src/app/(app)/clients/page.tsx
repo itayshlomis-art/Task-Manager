@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
 import { CLIENT_STATUS } from "@/lib/constants";
 import type { Client, Profile } from "@/lib/types";
 import { Plus } from "lucide-react";
 
 export default function ClientsPage() {
+  const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,8 +61,8 @@ export default function ClientsPage() {
             </thead>
             <tbody>
               {clients.map((c) => (
-                <tr key={c.id} className="border-b border-slate-100">
-                  <td className="p-3 font-medium text-slate-800">{c.name}</td>
+                <tr key={c.id} onClick={() => router.push(`/clients/${c.id}`)} className="cursor-pointer border-b border-slate-100 transition hover:bg-slate-50">
+                  <td className="p-3 font-medium text-blue-700">{c.name}</td>
                   <td className="p-3 text-slate-600">{c.contact_name || "—"}</td>
                   <td className="p-3 text-slate-600" dir="ltr">{c.phone || "—"}</td>
                   <td className="p-3 text-slate-600">{managerName(c.account_manager_id)}</td>
