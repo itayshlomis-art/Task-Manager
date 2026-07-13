@@ -30,3 +30,4 @@ export type RoleKey = keyof typeof ROLE;
 
 export const URGENCY_OPTIONS = (Object.keys(URGENCY) as UrgencyKey[]);
 export const STATUS_OPTIONS = (Object.keys(STATUS) as StatusKey[]);
+export const ROLE_OPTIONS = (Object.keys(ROLE) as RoleKey[]);

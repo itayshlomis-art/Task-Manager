@@ -34,6 +34,7 @@ npm run dev
 3. פתח **Project Settings → API** והעתק:
    - `Project URL`  →  `NEXT_PUBLIC_SUPABASE_URL`
    - `anon public`  →  `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `service_role` →  `SUPABASE_SERVICE_ROLE_KEY` (סודי! לצד השרת בלבד — נחוץ להוספת משתמשים ממסך "ניהול משתמשים")
 4. הדבק את הערכים ב-`.env.local`.
 5. (מומלץ) **Authentication → Providers → Email**: כבה זמנית את "Confirm email" כדי להתחבר מיד ללא אימות מייל.
 
