@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getSupabase } from "@/lib/supabase";
+import { getSupabase, createSignupClient } from "@/lib/supabase";
 import { useApp } from "@/lib/app-context";
 import { ROLE, ROLE_OPTIONS } from "@/lib/constants";
 import type { RoleKey } from "@/lib/constants";
@@ -114,18 +114,27 @@ function AddUserDialog({ onClose, onDone }: { onClose: () => void; onDone: () =>
     if (password.length < 6) return setError("הסיסמה חייבת להכיל לפחות 6 תווים");
     setSaving(true);
     try {
-      const { data: sess } = await getSupabase().auth.getSession();
-      const token = sess.session?.access_token;
-      const res = await fetch("/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ full_name: fullName.trim(), email: email.trim(), password, role, job_title: jobTitle.trim() }),
+      // הרשמה בלקוח זמני כדי לא לנתק את המנהל המחובר
+      const signup = createSignupClient();
+      const { data, error: signErr } = await signup.auth.signUp({
+        email: email.trim(),
+        password,
+        options: { data: { full_name: fullName.trim() } },
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "שגיאה");
+      if (signErr) throw signErr;
+      const newId = data.user?.id;
+      if (!newId) throw new Error("לא ניתן ליצור את המשתמש");
+
+      // עדכון הפרופיל עם התפקיד וההרשאה (דרך המנהל המחובר)
+      const { error: profErr } = await getSupabase().from("profiles").upsert({
+        id: newId, email: email.trim(), full_name: fullName.trim(),
+        job_title: jobTitle.trim(), role, is_active: true,
+      });
+      if (profErr) throw profErr;
       onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "שגיאה ביצירת המשתמש");
+      const msg = err instanceof Error ? err.message : "שגיאה ביצירת המשתמש";
+      setError(msg.includes("already registered") ? "כתובת האימייל כבר קיימת במערכת" : msg);
       setSaving(false);
     }
   }
