@@ -77,6 +77,19 @@ export type TaskWithRelations = Task & {
   owner?: Pick<Profile, "id" | "full_name"> | null;
 };
 
+export type Invoice = {
+  id: string;
+  month: string; // 'YYYY-MM'
+  description: string | null;
+  client_id: string | null;
+  amount: number | null;
+  file_name: string | null;
+  file_path: string | null;
+  notes: string | null;
+  uploaded_by: string | null;
+  uploaded_at: string;
+};
+
 export type TaskHistory = {
   id: string;
   task_id: string;

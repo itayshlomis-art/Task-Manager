@@ -28,6 +28,23 @@ export function sortTasks<T extends Pick<Task, "due_date" | "status" | "urgency"
   });
 }
 
+const HE_MONTHS = [
+  "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
+  "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
+];
+
+// 'YYYY-MM' → 'יולי 2026'
+export function formatMonth(ym: string): string {
+  const [y, m] = ym.split("-");
+  const idx = parseInt(m) - 1;
+  if (isNaN(idx) || !HE_MONTHS[idx]) return ym;
+  return `${HE_MONTHS[idx]} ${y}`;
+}
+
+export function currentMonth(): string {
+  return new Date().toISOString().slice(0, 7);
+}
+
 export function formatDate(d: string | null): string {
   if (!d) return "—";
   const [y, m, day] = d.split("-");

@@ -7,7 +7,7 @@ import { useApp } from "@/lib/app-context";
 import { ROLE } from "@/lib/constants";
 import {
   LayoutDashboard, User, ListChecks, CalendarDays, UsersRound,
-  Building2, Workflow, Settings, LogOut,
+  Building2, Workflow, Receipt, Settings, LogOut,
 } from "lucide-react";
 
 const NAV = [
@@ -17,6 +17,7 @@ const NAV = [
   { href: "/day", label: "תצוגה יומית", icon: CalendarDays },
   { href: "/team", label: "לפי איש צוות", icon: UsersRound },
   { href: "/clients", label: "לקוחות", icon: Building2 },
+  { href: "/invoices", label: "חשבוניות", icon: Receipt },
   { href: "/processes", label: "תהליכים", icon: Workflow },
 ];
 
