@@ -1,21 +1,26 @@
 import { getSupabase } from "./supabase";
 import type { UrgencyKey } from "./constants";
 
-// מועדי דיווח רגולטוריים חודשיים בישראל (יום היעד בחודש)
+// מועד דיווח (נשמר בטבלת deadline_definitions וניתן לעריכה)
 export type DeadlineDef = {
-  key: string;
+  id: string;
   title: string;
-  dueDay: number;        // היום בחודש שבו הדדליין
+  due_day: number;
   urgency: UrgencyKey;
-  description: string;
+  description: string | null;
+  order_index: number;
+  is_active: boolean;
 };
 
-export const DEADLINES: DeadlineDef[] = [
-  { key: "vat",        title: "דיווח ותשלום מע\"מ",        dueDay: 15, urgency: "urgent",    description: "דיווח תקופתי למע\"מ" },
-  { key: "advances",   title: "מקדמות מס הכנסה",           dueDay: 15, urgency: "important", description: "תשלום מקדמות מס הכנסה" },
-  { key: "withholding",title: "ניכויים – טופס 102",        dueDay: 15, urgency: "important", description: "דיווח ניכויים ממשכורות" },
-  { key: "bituach",    title: "ביטוח לאומי",               dueDay: 15, urgency: "important", description: "תשלום דמי ביטוח לאומי" },
-];
+// טעינת המועדים הפעילים
+export async function loadDeadlines(): Promise<DeadlineDef[]> {
+  const { data } = await getSupabase()
+    .from("deadline_definitions")
+    .select("*")
+    .eq("is_active", true)
+    .order("order_index");
+  return (data as DeadlineDef[]) ?? [];
+}
 
 // חישוב תאריך היעד עבור חודש נתון ('YYYY-MM')
 export function deadlineDate(month: string, dueDay: number): string {
@@ -25,34 +30,35 @@ export function deadlineDate(month: string, dueDay: number): string {
 }
 
 // יצירת משימות למועדי הדיווח שנבחרו, עבור הלקוחות שנבחרו
-// מדלג על משימות שכבר קיימות (אותו לקוח + אותה כותרת + אותו תאריך יעד)
 export async function generateDeadlineTasks(opts: {
   month: string;
   clientIds: string[];
-  deadlineKeys: string[];
+  deadlines: DeadlineDef[];
   ownerByClient: Record<string, string | null>;
   createdBy: string;
 }) {
   const supabase = getSupabase();
-  const { month, clientIds, deadlineKeys, ownerByClient, createdBy } = opts;
-  const defs = DEADLINES.filter((d) => deadlineKeys.includes(d.key));
+  const { month, clientIds, deadlines, ownerByClient, createdBy } = opts;
 
-  // משימות קיימות באותו תאריך יעד כדי למנוע כפילויות
   const { data: existing } = await supabase
     .from("tasks")
     .select("title,client_id,due_date")
     .in("client_id", clientIds.length ? clientIds : ["00000000-0000-0000-0000-000000000000"]);
-  const seen = new Set(((existing as { title: string; client_id: string; due_date: string }[]) ?? []).map((t) => `${t.client_id}|${t.title}|${t.due_date}`));
+  const seen = new Set(
+    ((existing as { title: string; client_id: string; due_date: string }[]) ?? []).map(
+      (t) => `${t.client_id}|${t.title}|${t.due_date}`
+    )
+  );
 
   const rows: Record<string, unknown>[] = [];
   for (const clientId of clientIds) {
-    for (const d of defs) {
-      const due = deadlineDate(month, d.dueDay);
+    for (const d of deadlines) {
+      const due = deadlineDate(month, d.due_day);
       const title = `${d.title} – ${month.split("-")[1]}/${month.split("-")[0]}`;
       if (seen.has(`${clientId}|${title}|${due}`)) continue;
       rows.push({
         title,
-        description: d.description,
+        description: d.description ?? "",
         client_id: clientId,
         owner_id: ownerByClient[clientId] ?? null,
         urgency: d.urgency,
@@ -74,9 +80,9 @@ export async function generateDeadlineTasks(opts: {
     await supabase.from("task_history").insert(
       created.map((r) => ({ task_id: r.id, changed_by: createdBy, action_type: "created", note: "נוצרה ממועדי דיווח" }))
     );
-    const notifs = created.filter((r) => r.owner_id).map((r) => ({
-      user_id: r.owner_id, task_id: r.id, type: "assigned", message: `הוקצתה לך משימת דיווח: ${r.title}`,
-    }));
+    const notifs = created
+      .filter((r) => r.owner_id)
+      .map((r) => ({ user_id: r.owner_id, task_id: r.id, type: "assigned", message: `הוקצתה לך משימת דיווח: ${r.title}` }));
     if (notifs.length) await supabase.from("notifications").insert(notifs);
   }
 
