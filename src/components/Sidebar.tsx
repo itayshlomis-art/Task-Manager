@@ -6,15 +6,17 @@ import { getSupabase } from "@/lib/supabase";
 import { useApp } from "@/lib/app-context";
 import { ROLE } from "@/lib/constants";
 import {
-  LayoutDashboard, User, ListChecks, CalendarDays, UsersRound,
-  Building2, Workflow, Receipt, Settings, LogOut,
+  LayoutDashboard, User, ListChecks, KanbanSquare, CalendarDays, CalendarClock,
+  UsersRound, Building2, Workflow, Receipt, Settings, LogOut,
 } from "lucide-react";
 
 const NAV = [
   { href: "/dashboard", label: "דשבורד ניהולי", icon: LayoutDashboard },
   { href: "/my", label: "הדשבורד שלי", icon: User },
   { href: "/tasks", label: "לוח משימות", icon: ListChecks },
+  { href: "/board", label: "לוח קנבן", icon: KanbanSquare },
   { href: "/day", label: "תצוגה יומית", icon: CalendarDays },
+  { href: "/deadlines", label: "מועדי דיווח", icon: CalendarClock },
   { href: "/team", label: "לפי איש צוות", icon: UsersRound },
   { href: "/clients", label: "לקוחות", icon: Building2 },
   { href: "/invoices", label: "חשבוניות", icon: Receipt },

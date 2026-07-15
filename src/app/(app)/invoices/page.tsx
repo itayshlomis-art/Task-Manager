@@ -5,7 +5,7 @@ import { getSupabase } from "@/lib/supabase";
 import { useApp } from "@/lib/app-context";
 import type { Invoice, Client } from "@/lib/types";
 import { formatMonth, currentMonth, formatDate } from "@/lib/utils";
-import { Plus, Download, Trash2, FileText } from "lucide-react";
+import { Plus, Download, Trash2, FileText, Sparkles } from "lucide-react";
 
 export default function InvoicesPage() {
   const { userId } = useApp();
@@ -150,6 +150,40 @@ function UploadDialog({ clients, currentUserId, onClose, onDone }: {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanMsg, setScanMsg] = useState("");
+
+  function fileToBase64(f: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+      reader.onerror = reject;
+      reader.readAsDataURL(f);
+    });
+  }
+
+  async function scanWithAI() {
+    if (!file) return;
+    setScanMsg(""); setError(""); setScanning(true);
+    try {
+      const data = await fileToBase64(file);
+      const res = await fetch("/api/scan-invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data, mediaType: file.type }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "שגיאה בסריקה");
+      if (json.supplier) setDescription(json.supplier);
+      if (json.amount != null) setAmount(String(json.amount));
+      if (json.month) setMonth(json.month);
+      setScanMsg("✓ הפרטים מולאו אוטומטית — אנא ודא שהם נכונים");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "שגיאה בסריקה");
+    } finally {
+      setScanning(false);
+    }
+  }
 
   async function submit() {
     setError("");
@@ -207,8 +241,19 @@ function UploadDialog({ clients, currentUserId, onClose, onDone }: {
             <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 p-3 text-sm text-slate-600 hover:bg-slate-50">
               <FileText size={18} className="text-slate-400" />
               {file ? file.name : "בחר קובץ..."}
-              <input type="file" accept=".pdf,image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="hidden" />
+              <input type="file" accept=".pdf,image/*" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setScanMsg(""); }} className="hidden" />
             </label>
+            {file && (
+              <button
+                type="button"
+                onClick={scanWithAI}
+                disabled={scanning}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-purple-300 bg-purple-50 py-2 text-sm font-medium text-purple-700 transition hover:bg-purple-100 disabled:opacity-50"
+              >
+                <Sparkles size={16} /> {scanning ? "סורק..." : "סרוק עם AI ומלא אוטומטית"}
+              </button>
+            )}
+            {scanMsg && <p className="mt-2 text-xs text-green-700">{scanMsg}</p>}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">הערות</label>
